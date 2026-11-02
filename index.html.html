@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>健身室預約系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                            950: '#172554',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen flex flex-col selection:bg-brand-500 selection:text-white">
+
+    <div id="toast" class="fixed top-5 right-5 z-50 transform transition-all duration-300 translate-y-[-100px] opacity-0 pointer-events-none flex items-center p-4 mb-4 text-sm rounded-xl shadow-xl border border-gray-700 bg-gray-800 text-white" role="alert">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-green-400 text-lg mr-3"></i>
+        <div id="toast-message" class="text-sm font-medium">提示訊息內容</div>
+    </div>
+
+    <header class="border-b border-gray-800 bg-gray-900/80 backdrop-blur sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-brand-600 text-white p-2 rounded-lg flex items-center justify-center shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid fa-dumbbell text-xl"></i>
+                </div>
+                <span class="font-bold text-lg tracking-wide bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">
+                    CLS 健身室
+                </span>
+            </div>
+
+            <div id="nav-user-info" class="hidden flex items-center space-x-4">
+                <span id="user-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/20">
+                    <i class="fa-solid fa-user-graduate mr-1"></i> 學生
+                </span>
+                <div class="text-sm text-gray-300 hidden sm:block">
+                    <span id="display-user-name" class="font-medium text-white">張小明</span>
+                    <span id="display-user-id" class="text-xs text-gray-400 ml-1">(B123456)</span>
+                </div>
+                <button onclick="logout()" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-3 py-2 rounded-lg border border-gray-700 transition duration-150 flex items-center space-x-1">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>登出</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center p-4 sm:p-6 lg:p-8">
+
+        <section id="view-login" class="w-full max-w-md my-auto">
+            <div class="bg-gray-900/90 border border-gray-800 rounded-2xl shadow-2xl p-6 sm:p-8 relative overflow-hidden backdrop-blur">
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-brand-600/10 rounded-full blur-2xl pointer-events-none"></div>
+
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-brand-600/10 text-brand-500 mb-4 border border-brand-500/20">
+                        <i class="fa-solid fa-id-card text-2xl"></i>
+                    </div>
+                    <h1 class="text-2xl font-bold text-white tracking-tight">學生登入</h1>
+                    <p class="text-xs text-gray-400 mt-1">請輸入學生編號與密碼以預約健身室</p>
+                </div>
+
+                <form onsubmit="handleLogin(event)" class="space-y-5">
+                    <div>
+                        <label for="student-id" class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
+                            學生編號
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-500">
+                                <i class="fa-solid fa-address-card"></i>
+                            </div>
+                            <input type="text" id="student-id" required placeholder="例如：B123456" 
+                                class="w-full pl-10 pr-4 py-2.5 bg-gray-800/80 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition text-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-xs font-semibold text-gray-300 uppercase tracking-wider mb-2">
+                            密碼
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-500">
+                                <i class="fa-solid fa-lock"></i>
+                            </div>
+                            <input type="password" id="password" required placeholder="••••••••" 
+                                class="w-full pl-10 pr-4 py-2.5 bg-gray-800/80 border border-gray-700 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition text-sm">
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-3 px-4 bg-brand-600 hover:bg-brand-500 text-white font-semibold rounded-xl shadow-lg shadow-brand-600/30 transition duration-200 active:scale-[0.98] text-sm flex items-center justify-center space-x-2">
+                        <span>登入</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
+                </form>
+
+                <div class="mt-8 pt-6 border-t border-gray-800/80">
+                    <p class="text-xs text-center text-gray-500 mb-3 font-medium">Demo</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="quickLogin('student')" class="py-2 px-3 bg-gray-800/60 hover:bg-gray-800 text-gray-300 hover:text-white rounded-lg text-xs font-medium border border-gray-700/60 transition flex items-center justify-center space-x-1.5">
+                            <i class="fa-solid fa-user text-brand-400"></i>
+                            <span>以學生身份登入</span>
+                        </button>
+                        <button onclick="quickLogin('admin')" class="py-2 px-3 bg-gray-800/60 hover:bg-gray-800 text-gray-300 hover:text-white rounded-lg text-xs font-medium border border-gray-700/60 transition flex items-center justify-center space-x-1.5">
+                            <i class="fa-solid fa-user-gear text-amber-400"></i>
+                            <span>以老師/管理員身分登入</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-booking" class="hidden w-full max-w-5xl">
+            <div class="space-y-6">
+                <div class="bg-gradient-to-r from-gray-900 via-gray-900 to-brand-950 border border-gray-800 rounded-2xl p-6 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <span>預約健身時段</span>
+                        </h2>
+                        <p class="text-xs text-gray-400 mt-1">請選擇使用的時段、器材與預約日期。</p>
+                    </div>
+                    <div class="flex items-center bg-gray-800/80 border border-gray-700/80 px-4 py-2 rounded-xl text-xs space-x-3">
+                        <div class="text-center">
+                            <div class="text-gray-400">地點：</div>
+                            <div class="font-semibold text-white">健身室</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider">
+                            <span class="w-6 h-6 rounded-full bg-brand-600 text-white text-xs flex items-center justify-center">1</span>
+                            選擇預約時間段
+                        </h3>
+                        <span class="text-xs text-gray-400">午間開放時段</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" id="time-slot-options">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                    <div class="lg:col-span-1 bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider">
+                                    <span class="w-6 h-6 rounded-full bg-brand-600 text-white text-xs flex items-center justify-center">2</span>
+                                    選擇訓練器材
+                                </h3>
+                                <span class="text-xs text-gray-400">常見器材</span>
+                            </div>
+
+                            <div class="space-y-2.5" id="equipment-options">
+                            </div>
+                        </div>
+
+                        <div class="mt-6 pt-4 border-t border-gray-800 text-xs text-gray-500 flex items-center gap-2">
+                            <i class="fa-solid fa-circle-info text-brand-400"></i>
+                            <span>預約器材僅供分配參考，現場以安全規範為原則。</span>
+                        </div>
+                    </div>
+
+                    <div class="lg:col-span-2 bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-sm font-bold text-white flex items-center gap-2 uppercase tracking-wider">
+                                    <span class="w-6 h-6 rounded-full bg-brand-600 text-white text-xs flex items-center justify-center">3</span>
+                                    選擇預約日期 (開放未來 7 天)
+                                </h3>
+                                <span class="text-xs text-brand-400 font-medium">每日限額開放</span>
+                            </div>
+
+                            <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2.5 mb-6" id="date-cards-container">
+                            </div>
+
+                            <div class="bg-gray-800/50 border border-gray-700/60 rounded-xl p-4 mb-6">
+                                <h4 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">預約資訊確認</h4>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+                                    <div>
+                                        <span class="text-gray-400 block">日期</span>
+                                        <span id="summary-date" class="font-semibold text-white">2026-10-21</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-400 block">預約時段</span>
+                                        <span id="summary-time" class="font-semibold text-brand-400">12:00 - 12:20</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-400 block">選擇器材</span>
+                                        <span id="summary-equipment" class="font-semibold text-brand-300">跑步機</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-400 block">該時段剩餘名額</span>
+                                        <span id="summary-spots" class="font-bold text-green-400">12 / 15 人</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 border-t border-gray-800">
+                            <div class="text-xs text-gray-400 flex items-center gap-2">
+                                <i class="fa-solid fa-triangle-exclamation text-amber-400"></i>
+                                <span>請準時入場，逾時不候。</span>
+                            </div>
+                            <button id="btn-submit-booking" onclick="submitBooking()" class="w-full sm:w-auto px-8 py-3 bg-brand-600 hover:bg-brand-500 active:scale-[0.98] text-white font-bold rounded-xl shadow-lg shadow-brand-600/30 transition duration-150 flex items-center justify-center space-x-2 text-sm">
+                                <i class="fa-solid fa-calendar-check"></i>
+                                <span>確認預約</span>
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <section id="view-admin" class="hidden w-full max-w-6xl space-y-6">
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+                <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg lg:col-span-1 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-sliders text-brand-400"></i>
+                                容量與人數管理
+                            </h3>
+                            <span class="text-xs bg-gray-800 text-gray-400 px-2 py-1 rounded">可動態調整</span>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs text-gray-400 mb-1">每個時段預設最大容納人數</label>
+                                <div class="flex space-x-2">
+                                    <input type="number" id="input-max-capacity" min="1" max="100" value="15" 
+                                        class="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-xl text-white font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                    <button onclick="updateCapacity()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white text-xs font-semibold rounded-xl transition shadow">
+                                        更新容量
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-800/60 rounded-xl p-3 border border-gray-700/50 flex items-center justify-between">
+                                <span class="text-xs text-gray-300">目前篩選條件預約總人數:</span>
+                                <span id="admin-registered-count" class="text-lg font-bold text-white">0 / 15 名</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="admin-capacity-alert" class="mt-4 p-3 bg-red-950/60 border border-red-800/80 rounded-xl text-red-300 text-xs hidden flex items-start gap-2.5">
+                        <i class="fa-solid fa-triangle-exclamation text-red-400 text-base shrink-0 mt-0.5"></i>
+                        <div>
+                            <div class="font-bold text-red-200">警告：人數已達上限或超額！</div>
+                            <div id="admin-alert-text" class="mt-0.5 opacity-90">目前預約人數已超過最高容納限制 (15人)。</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900/80 border border-gray-800 rounded-2xl p-5 shadow-lg lg:col-span-2 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-chart-pie text-brand-400"></i>
+                                健身室營運與導出
+                            </h3>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="seedTestData()" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded-lg border border-gray-700 transition">
+                                    <i class="fa-solid fa-plus mr-1"></i>插入測試資料
+                                </button>
+                                <button onclick="exportToCSV()" class="text-xs bg-green-600 hover:bg-green-500 text-white font-semibold px-3 py-1.5 rounded-lg transition shadow flex items-center gap-1">
+                                    <i class="fa-solid fa-file-csv"></i>
+                                    <span>匯出名單 (CSV)</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                            <div>
+                                <label for="admin-filter-date" class="block text-xs text-gray-400 mb-1">依預約日期查看：</label>
+                                <select id="admin-filter-date" onchange="renderAdminTable()" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                </select>
+                            </div>
+                            <div>
+                                <label for="admin-filter-slot" class="block text-xs text-gray-400 mb-1">依時間段查看：</label>
+                                <select id="admin-filter-slot" onchange="renderAdminTable()" class="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:ring-2 focus:ring-brand-500">
+                                    <option value="ALL">全部時間段</option>
+                                    <option value="12:00 - 12:20">時段一：12:00 - 12:20</option>
+                                    <option value="12:20 - 12:40">時段二：12:20 - 12:40</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-3 pt-4 border-t border-gray-800 text-center">
+                        <div class="bg-gray-800/40 p-2.5 rounded-xl border border-gray-800">
+                            <div class="text-xs text-gray-400">時段選項</div>
+                            <div class="text-sm font-bold text-brand-400 mt-0.5">2 個 20分鐘時段</div>
+                        </div>
+                        <div class="bg-gray-800/40 p-2.5 rounded-xl border border-gray-800">
+                            <div class="text-xs text-gray-400">最高可約器材</div>
+                            <div id="admin-stat-equipment" class="text-sm font-bold text-white mt-0.5">6 種常用器材</div>
+                        </div>
+                        <div class="bg-gray-800/40 p-2.5 rounded-xl border border-gray-800">
+                            <div class="text-xs text-gray-400">總預約筆數</div>
+                            <div id="admin-stat-total" class="text-sm font-bold text-white mt-0.5">0</div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="bg-gray-900/80 border border-gray-800 rounded-2xl shadow-lg overflow-hidden">
+                <div class="p-5 border-b border-gray-800 flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-list-check text-brand-400"></i>
+                        已預約學生名單 (名冊)
+                    </h3>
+                    <span id="admin-table-subtitle" class="text-xs text-gray-400">共 0 筆記錄</span>
+                </div>
+
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left text-xs text-gray-300">
+                        <thead class="bg-gray-800/60 text-gray-400 uppercase font-semibold border-b border-gray-800">
+                            <tr>
+                                <th class="px-5 py-3.5">學生姓名</th>
+                                <th class="px-5 py-3.5">學生編號</th>
+                                <th class="px-5 py-3.5">選擇器材</th>
+                                <th class="px-5 py-3.5">預約日期</th>
+                                <th class="px-5 py-3.5">預約時間段</th>
+                                <th class="px-5 py-3.5">狀態</th>
+                                <th class="px-5 py-3.5 text-right">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-table-body" class="divide-y divide-gray-800/60">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <footer class="border-t border-gray-800 py-4 text-center text-xs text-gray-500">
+        &copy; 2026 FitLife 學校健身室預約管理系統. 保留所有權利。
+    </footer>
+
+    <script>
+        const TIME_SLOTS = [
+            { id: 'slot1', name: '時段一', time: '12:00 - 12:20' },
+            { id: 'slot2', name: '時段二', time: '12:20 - 12:40' }
+        ];
+
+        const EQUIPMENT_LIST = [
+            { id: 'treadmill', name: '跑步機 (Treadmill)', icon: 'fa-person-running' },
+            { id: 'elliptical', name: '滑步機 (Elliptical)', icon: 'fa-person-walking' },
+            { id: 'dumbbells', name: '啞鈴重訓區 (Dumbbells)', icon: 'fa-dumbbell' },
+            { id: 'leg-press', name: '腿部推舉機 (Leg Press)', icon: 'fa-socks' },
+            { id: 'smith-machine', name: '史密斯機 (Smith Machine)', icon: 'fa-weight-hanging' },
+            { id: 'bench-press', name: '臥推架 (Bench Press)', icon: 'fa-child-reaching' }
+        ];
+
+        let currentUser = null; 
+        let maxCapacity = 15;   
+        let selectedTimeSlot = TIME_SLOTS[0].time;
+        let selectedEquipment = EQUIPMENT_LIST[0].name;
+        let selectedDate = getFormattedDate(0); 
+
+        let bookings = [
+            { id: 101, name: '陳大文', studentId: 'B123456', equipment: '跑步機 (Treadmill)', date: getFormattedDate(0), time: '12:00 - 12:20', status: '已確認' },
+            { id: 102, name: '李美麗', studentId: 'B234567', equipment: '啞鈴重訓區 (Dumbbells)', date: getFormattedDate(0), time: '12:20 - 12:40', status: '已確認' },
+            { id: 103, name: '張志豪', studentId: 'B345678', equipment: '史密斯機 (Smith Machine)', date: getFormattedDate(1), time: '12:00 - 12:20', status: '已確認' }
+        ];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            renderTimeSlotOptions();
+            renderEquipmentOptions();
+            renderDateCards();
+            updateSummary();
+            populateAdminDateFilter();
+        });
+
+        function getFormattedDate(offsetDays = 0) {
+            const d = new Date();
+            d.setDate(d.getDate() + offsetDays);
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function showToast(message, isSuccess = true) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMessage.textContent = message;
+            if (isSuccess) {
+                toastIcon.className = "fa-solid fa-circle-check text-green-400 text-lg mr-3";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-xmark text-red-400 text-lg mr-3";
+            }
+
+            toast.classList.remove('translate-y-[-100px]', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-100px]', 'opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        function switchView(viewName) {
+            document.getElementById('view-login').classList.add('hidden');
+            document.getElementById('view-booking').classList.add('hidden');
+            document.getElementById('view-admin').classList.add('hidden');
+
+            const navUserInfo = document.getElementById('nav-user-info');
+
+            if (viewName === 'login') {
+                document.getElementById('view-login').classList.remove('hidden');
+                navUserInfo.classList.add('hidden');
+            } else if (viewName === 'booking') {
+                document.getElementById('view-booking').classList.remove('hidden');
+                navUserInfo.classList.remove('hidden');
+                document.getElementById('user-badge').innerHTML = `<i class="fa-solid fa-user-graduate mr-1"></i> 學生`;
+                document.getElementById('user-badge').className = "px-3 py-1 rounded-full text-xs font-semibold bg-brand-500/10 text-brand-400 border border-brand-500/20";
+                document.getElementById('display-user-name').textContent = currentUser.name;
+                document.getElementById('display-user-id').textContent = `(${currentUser.id})`;
+                renderTimeSlotOptions();
+                renderDateCards(); 
+            } else if (viewName === 'admin') {
+                document.getElementById('view-admin').classList.remove('hidden');
+                navUserInfo.classList.remove('hidden');
+                document.getElementById('user-badge').innerHTML = `<i class="fa-solid fa-user-shield mr-1"></i> 管理員`;
+                document.getElementById('user-badge').className = "px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20";
+                document.getElementById('display-user-name').textContent = currentUser.name;
+                document.getElementById('display-user-id').textContent = `(後台權限)`;
+                renderAdminTable();
+            }
+        }
+
+        function handleLogin(e) {
+            e.preventDefault();
+            const studentIdInput = document.getElementById('student-id').value.trim();
+            const passwordInput = document.getElementById('password').value;
+
+            if (!studentIdInput) {
+                showToast('請輸入學生編號', false);
+                return;
+            }
+
+            currentUser = {
+                name: '學生 (使用者)',
+                id: studentIdInput.toUpperCase(),
+                role: 'student'
+            };
+
+            showToast(`歡迎登入，${currentUser.id}`);
+            switchView('booking');
+        }
+
+        function quickLogin(role) {
+            if (role === 'student') {
+                currentUser = { name: '張小明', id: 'B123456', role: 'student' };
+                document.getElementById('student-id').value = 'B123456';
+                document.getElementById('password').value = 'password';
+                showToast('以學生身份 (張小明) 登入成功');
+                switchView('booking');
+            } else {
+                currentUser = { name: '健身室管理員', id: 'ADMIN-01', role: 'admin' };
+                showToast('以管理員身份進入後台');
+                switchView('admin');
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            showToast('已登出');
+            switchView('login');
+        }
+
+        function renderTimeSlotOptions() {
+            const container = document.getElementById('time-slot-options');
+            container.innerHTML = '';
+
+            TIME_SLOTS.forEach(slot => {
+                const isSelected = slot.time === selectedTimeSlot;
+                const bookedCount = bookings.filter(b => b.date === selectedDate && b.time === slot.time).length;
+                const remaining = Math.max(0, maxCapacity - bookedCount);
+                const isFull = remaining === 0;
+
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.onclick = () => selectTimeSlot(slot.time);
+                card.className = `p-4 rounded-xl border transition text-left flex items-center justify-between ${
+                    isSelected 
+                        ? 'bg-brand-600/20 border-brand-500 ring-2 ring-brand-500' 
+                        : isFull
+                            ? 'bg-gray-800/30 border-gray-800 opacity-60'
+                            : 'bg-gray-800/60 border-gray-700/80 hover:bg-gray-800'
+                }`;
+
+                card.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl ${isSelected ? 'bg-brand-600 text-white' : 'bg-gray-800 text-gray-400'} flex items-center justify-center text-sm font-bold">
+                            <i class="fa-regular fa-clock"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-gray-400 font-medium">${slot.name}</div>
+                            <div class="text-sm font-bold text-white">${slot.time}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs px-2.5 py-1 rounded-full font-semibold ${
+                            isFull 
+                                ? 'bg-red-950/80 text-red-400 border border-red-800' 
+                                : 'bg-green-500/10 text-green-400 border border-green-500/20'
+                        }">
+                            ${isFull ? '已額滿' : `剩餘 ${remaining} 人`}
+                        </span>
+                    </div>
+                `;
+
+                container.appendChild(card);
+            });
+        }
+
+        function selectTimeSlot(timeStr) {
+            selectedTimeSlot = timeStr;
+            renderTimeSlotOptions();
+            renderDateCards();
+            updateSummary();
+        }
+
+        function renderEquipmentOptions() {
+            const container = document.getElementById('equipment-options');
+            container.innerHTML = '';
+
+            EQUIPMENT_LIST.forEach((item) => {
+                const isSelected = item.name === selectedEquipment;
+                const label = document.createElement('label');
+                label.className = `flex items-center justify-between p-3 rounded-xl border cursor-pointer transition ${
+                    isSelected 
+                    ? 'bg-brand-600/15 border-brand-500 text-white shadow-sm' 
+                    : 'bg-gray-800/40 border-gray-700/60 text-gray-300 hover:bg-gray-800'
+                }`;
+
+                label.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <i class="fa-solid ${item.icon} text-sm ${isSelected ? 'text-brand-400' : 'text-gray-400'}"></i>
+                        <span class="text-xs font-medium">${item.name}</span>
+                    </div>
+                    <input type="radio" name="equipment_choice" value="${item.name}" ${isSelected ? 'checked' : ''} 
+                        onchange="selectEquipment('${item.name}')" class="hidden">
+                    <div class="w-4 h-4 rounded-full border flex items-center justify-center ${isSelected ? 'border-brand-500 bg-brand-500' : 'border-gray-600'}">
+                        ${isSelected ? '<i class="fa-solid fa-check text-[10px] text-white"></i>' : ''}
+                    </div>
+                `;
+                container.appendChild(label);
+            });
+        }
+
+        function selectEquipment(eqName) {
+            selectedEquipment = eqName;
+            renderEquipmentOptions();
+            updateSummary();
+        }
+
+        function renderDateCards() {
+            const container = document.getElementById('date-cards-container');
+            container.innerHTML = '';
+
+            const weekDays = ['週日', '週一', '週二', '週三', '週四', '週五', '週六'];
+
+            for (let i = 0; i < 7; i++) {
+                const dateStr = getFormattedDate(i);
+                const d = new Date();
+                d.setDate(d.getDate() + i);
+                const dayName = i === 0 ? '今天' : weekDays[d.getDay()];
+                const dayNum = `${d.getMonth() + 1}/${d.getDate()}`;
+
+                const currentBooked = bookings.filter(b => b.date === dateStr && b.time === selectedTimeSlot).length;
+                const remaining = Math.max(0, maxCapacity - currentBooked);
+                const isFull = remaining === 0;
+
+                const isSelected = dateStr === selectedDate;
+
+                const card = document.createElement('button');
+                card.type = 'button';
+                card.onclick = () => selectDate(dateStr);
+                card.className = `p-2.5 rounded-xl border text-center transition flex flex-col justify-between h-24 ${
+                    isSelected 
+                        ? 'bg-brand-600 text-white border-brand-400 shadow-lg shadow-brand-600/30 ring-2 ring-brand-400' 
+                        : isFull 
+                            ? 'bg-gray-800/20 border-gray-800 text-gray-500 cursor-not-allowed'
+                            : 'bg-gray-800/60 border-gray-700/80 text-gray-200 hover:bg-gray-800'
+                }`;
+
+                card.innerHTML = `
+                    <div class="text-[10px] font-medium opacity-80 uppercase">${dayName}</div>
+                    <div class="text-sm font-bold my-0.5">${dayNum}</div>
+                    <div class="text-[10px] px-1.5 py-0.5 rounded-full ${
+                        isSelected 
+                            ? 'bg-white/20 text-white' 
+                            : isFull 
+                                ? 'bg-red-950/80 text-red-400' 
+                                : 'bg-green-500/10 text-green-400 border border-green-500/20'
+                    }">
+                        ${isFull ? '額滿' : `剩 ${remaining} 名`}
+                    </div>
+                `;
+
+                container.appendChild(card);
+            }
+        }
+
+        function selectDate(dateStr) {
+            selectedDate = dateStr;
+            renderTimeSlotOptions();
+            renderDateCards();
+            updateSummary();
+        }
+
+        function updateSummary() {
+            document.getElementById('summary-date').textContent = selectedDate;
+            document.getElementById('summary-time').textContent = selectedTimeSlot;
+            document.getElementById('summary-equipment').textContent = selectedEquipment;
+
+            const currentBooked = bookings.filter(b => b.date === selectedDate && b.time === selectedTimeSlot).length;
+            const remaining = maxCapacity - currentBooked;
+
+            const spotsEl = document.getElementById('summary-spots');
+            spotsEl.textContent = `${Math.max(0, remaining)} / ${maxCapacity} 人`;
+
+            if (remaining <= 0) {
+                spotsEl.className = 'font-bold text-red-400';
+            } else if (remaining <= 3) {
+                spotsEl.className = 'font-bold text-amber-400';
+            } else {
+                spotsEl.className = 'font-bold text-green-400';
+            }
+        }
+
+        function submitBooking() {
+            if (!currentUser) return;
+
+            const duplicate = bookings.find(b => b.studentId === currentUser.id && b.date === selectedDate && b.time === selectedTimeSlot);
+            if (duplicate) {
+                showToast(`您已預約過 ${selectedDate} ${selectedTimeSlot} 時段！`, false);
+                return;
+            }
+
+            const currentBooked = bookings.filter(b => b.date === selectedDate && b.time === selectedTimeSlot).length;
+            if (currentBooked >= maxCapacity) {
+                showToast('該時段預約名額已滿，請選擇其他時段或日期！', false);
+                return;
+            }
+
+            const newBooking = {
+                id: Date.now(),
+                name: currentUser.name,
+                studentId: currentUser.id,
+                equipment: selectedEquipment,
+                date: selectedDate,
+                time: selectedTimeSlot,
+                status: '已確認'
+            };
+
+            bookings.push(newBooking);
+            showToast(`預約成功！日期：${selectedDate} (${selectedTimeSlot})`);
+
+            renderTimeSlotOptions();
+            renderDateCards();
+            updateSummary();
+            populateAdminDateFilter();
+        }
+
+        function updateCapacity() {
+            const inputVal = parseInt(document.getElementById('input-max-capacity').value, 10);
+            if (isNaN(inputVal) || inputVal < 1) {
+                showToast('請輸入有效的人數容量！', false);
+                return;
+            }
+
+            maxCapacity = inputVal;
+            showToast(`每個時段最大容量已修改為 ${maxCapacity} 人`);
+
+            renderTimeSlotOptions();
+            renderDateCards();
+            updateSummary();
+            renderAdminTable();
+        }
+
+        function populateAdminDateFilter() {
+            const select = document.getElementById('admin-filter-date');
+            const currentSelected = select.value;
+            select.innerHTML = '<option value="ALL">全部日期名單</option>';
+
+            for (let i = 0; i < 7; i++) {
+                const dateStr = getFormattedDate(i);
+                const opt = document.createElement('option');
+                opt.value = dateStr;
+                opt.textContent = `${dateStr} ${i === 0 ? '(今天)' : ''}`;
+                select.appendChild(opt);
+            }
+
+            if (currentSelected) select.value = currentSelected;
+        }
+
+        function renderAdminTable() {
+            const filterDate = document.getElementById('admin-filter-date').value || 'ALL';
+            const filterSlot = document.getElementById('admin-filter-slot').value || 'ALL';
+            const tbody = document.getElementById('admin-table-body');
+            tbody.innerHTML = '';
+
+            let filteredBookings = bookings;
+            if (filterDate !== 'ALL') {
+                filteredBookings = filteredBookings.filter(b => b.date === filterDate);
+            }
+            if (filterSlot !== 'ALL') {
+                filteredBookings = filteredBookings.filter(b => b.time === filterSlot);
+            }
+
+            const currentFilteredCount = filteredBookings.length;
+            const targetCapacity = filterSlot === 'ALL' ? maxCapacity * 2 : maxCapacity;
+
+            document.getElementById('admin-registered-count').textContent = `${currentFilteredCount} / ${targetCapacity} 名`;
+
+            const alertBox = document.getElementById('admin-capacity-alert');
+            const alertText = document.getElementById('admin-alert-text');
+
+            if (currentFilteredCount > targetCapacity) {
+                alertBox.classList.remove('hidden');
+                alertText.textContent = `注意：目前篩選下的預約人數 (${currentFilteredCount}人) 已超過上限容量 (${targetCapacity}人)！`;
+            } else if (currentFilteredCount === targetCapacity && targetCapacity > 0) {
+                alertBox.classList.remove('hidden');
+                alertText.textContent = `提示：目前篩選下的預約名額已額滿 (${targetCapacity}/${targetCapacity})。`;
+            } else {
+                alertBox.classList.add('hidden');
+            }
+
+            document.getElementById('admin-table-subtitle').textContent = `共 ${filteredBookings.length} 筆預約紀錄`;
+            document.getElementById('admin-stat-total').textContent = bookings.length;
+
+            if (filteredBookings.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-5 py-8 text-center text-gray-500">
+                            <i class="fa-solid fa-folder-open text-2xl mb-2 block text-gray-600"></i>
+                            無預約紀錄數據
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            filteredBookings.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-gray-800/40 transition";
+
+                tr.innerHTML = `
+                    <td class="px-5 py-3 font-semibold text-white">${item.name}</td>
+                    <td class="px-5 py-3 text-gray-400 font-mono">${item.studentId}</td>
+                    <td class="px-5 py-3 text-brand-300">${item.equipment}</td>
+                    <td class="px-5 py-3">${item.date}</td>
+                    <td class="px-5 py-3 text-brand-400 font-medium">${item.time}</td>
+                    <td class="px-5 py-3">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] bg-green-500/10 text-green-400 border border-green-500/20 font-medium">
+                            ${item.status}
+                        </span>
+                    </td>
+                    <td class="px-5 py-3 text-right">
+                        <button onclick="deleteBooking(${item.id})" class="text-xs text-red-400 hover:text-red-300 hover:bg-red-950/50 px-2 py-1 rounded transition">
+                            <i class="fa-solid fa-trash-can mr-1"></i>取消預約
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function deleteBooking(id) {
+            bookings = bookings.filter(b => b.id !== id);
+            showToast('已成功取消該筆預約紀錄');
+            renderTimeSlotOptions();
+            renderDateCards();
+            updateSummary();
+            renderAdminTable();
+        }
+
+        function seedTestData() {
+            const names = ['Tom', 'Jacky Chan', 'Ken', '', '鄧紫棋', '王力宏', '陳奕迅'];
+            const today = getFormattedDate(0);
+
+            names.forEach((name, idx) => {
+                const slot = idx % 2 === 0 ? '12:00 - 12:20' : '12:20 - 12:40';
+                bookings.push({
+                    id: Date.now() + idx,
+                    name: name,
+                    studentId: `B90000${idx}`,
+                    equipment: EQUIPMENT_LIST[idx % EQUIPMENT_LIST.length].name,
+                    date: today,
+                    time: slot,
+                    status: '已確認'
+                });
+            });
+
+            showToast('已批次插入測試學生預約資料');
+            renderTimeSlotOptions();
+            renderDateCards();
+            updateSummary();
+            renderAdminTable();
+        }
+
+        function exportToCSV() {
+            if (bookings.length === 0) {
+                showToast('目前尚無任何預約資料可匯出！', false);
+                return;
+            }
+
+            let csvContent = "\uFEFF學生姓名,學生編號,選擇器材,預約日期,預約時間段,狀態\n";
+
+            bookings.forEach(b => {
+                const row = [
+                    `"${b.name}"`,
+                    `"${b.studentId}"`,
+                    `"${b.equipment}"`,
+                    `"${b.date}"`,
+                    `"${b.time}"`,
+                    `"${b.status}"`
+                ];
+                csvContent += row.join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `學校健身室預約名冊_${getFormattedDate(0)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('名冊 CSV 檔案已開始下載！');
+        }
+    </script>
+</body>
+</html>
