@@ -71,7 +71,7 @@
                     <i class="fa-solid fa-user-graduate mr-1"></i> 學生
                 </span>
                 <div class="text-sm text-gray-300 hidden sm:block">
-                    <span id="display-user-name" class="font-medium text-white">張小明</span>
+                    <span id="display-user-name" class="font-medium text-white">Demo</span>
                     <span id="display-user-id" class="text-xs text-gray-400 ml-1">(B123456)</span>
                 </div>
                 <button onclick="logout()" class="text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white px-3 py-2 rounded-lg border border-gray-700 transition duration-150 flex items-center space-x-1">
@@ -490,16 +490,16 @@
                 role: 'student'
             };
 
-            showToast(`歡迎登入，${currentUser.id}`);
+            showToast(`Welcome!，${currentUser.id}`);
             switchView('booking');
         }
 
         function quickLogin(role) {
             if (role === 'student') {
-                currentUser = { name: '張小明', id: 'B123456', role: 'student' };
+                currentUser = { name: 'Demo', id: 'B123456', role: 'student' };
                 document.getElementById('student-id').value = 'B123456';
                 document.getElementById('password').value = 'password';
-                showToast('以學生身份 (張小明) 登入成功');
+                showToast('以學生身份 (Demo) 登入成功');
                 switchView('booking');
             } else {
                 currentUser = { name: '健身室管理員', id: 'ADMIN-01', role: 'admin' };
